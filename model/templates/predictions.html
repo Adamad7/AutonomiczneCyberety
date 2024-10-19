@@ -21,12 +21,49 @@
 <!--    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>-->
 <!--  </body>-->
 <!--</html>-->
+
+
+
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>Predictions</title>-->
+<!--    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <h1>Predicted Sales Report</h1>-->
+<!--    <table class="table table-striped">-->
+<!--        <thead>-->
+<!--        <tr>-->
+<!--            <th>City</th>-->
+<!--            <th>Product</th>-->
+<!--            <th>Predicted Quantity Ordered</th>-->
+<!--        </tr>-->
+<!--        </thead>-->
+<!--        <tbody>-->
+<!--        {% for prediction in predictions %}-->
+<!--            <tr>-->
+<!--                <td>{{ prediction.city }}</td>-->
+<!--                <td>{{ prediction.product }}</td>-->
+<!--                <td>{{ prediction.quantity }}</td>-->
+<!--            </tr>-->
+<!--        {% endfor %}-->
+<!--        </tbody>-->
+<!--    </table>-->
+<!--</div>-->
+<!--</body>-->
+<!--</html>-->
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Predictions</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <div class="container">
@@ -37,18 +74,88 @@
             <th>City</th>
             <th>Product</th>
             <th>Predicted Quantity Ordered</th>
+            <th>Action</th>
         </tr>
         </thead>
         <tbody>
         {% for prediction in predictions %}
-            <tr>
-                <td>{{ prediction.city }}</td>
-                <td>{{ prediction.product }}</td>
-                <td>{{ prediction.quantity }}</td>
-            </tr>
+        <tr>
+            <td>{{ prediction.city }}</td>
+            <td>{{ prediction.product }}</td>
+            <td>{{ prediction.predicted_quantity }}</td>
+            <td>
+                <button class="btn btn-primary" onclick="showChart('{{ prediction.city }}', '{{ prediction.product }}', {{ prediction.historical_sales | tojson }})">Show Chart</button>
+            </td>
+        </tr>
         {% endfor %}
         </tbody>
     </table>
 </div>
+
+<!-- Modal for displaying the chart -->
+<div class="modal fade" id="chartModal" tabindex="-1" role="dialog" aria-labelledby="chartModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="chartModalLabel">Historical Sales Chart</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <canvas id="salesChart" width="1800" height="1000"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let chartInstance = null;
+
+function showChart(city, product, historicalSales) {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+
+    // Destroy the previous chart instance if it exists
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array.from({length: historicalSales.length}, (_, i) => i + 1),
+            datasets: [{
+                label: `${product} Sales in ${city}`,
+                data: historicalSales,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+                fill: false
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Week'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Sales'
+                    }
+                }
+            }
+        }
+    });
+
+    $('#chartModal').modal('show');
+}
+</script>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>
