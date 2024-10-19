@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Predictions</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Predicted Quantities for Next Week</h1>
+      <div>
+        {% for table in tables %}
+          {{ table|safe }}
+        {% endfor %}
+      </div>
+    </div>
+  </body>
+</html>

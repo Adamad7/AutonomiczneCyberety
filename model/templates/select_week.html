@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Select Weeks</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Select Weeks for Training</h1>
+      <form method="post" action="/train">
+        <div class="form-group">
+          <label for="weeks">Choose weeks</label>
+          <select multiple class="form-control" id="weeks" name="weeks">
+            {% for week in weeks %}
+              <option value="{{ week }}">{{ week }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Train Model</button>
+      </form>
+    </div>
+  </body>
+</html>

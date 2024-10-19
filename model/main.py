@@ -11,135 +11,279 @@ from sklearn.metrics import mean_squared_error, r2_score
 import lightgbm as lgb
 import optuna
 
-df = pd.read_csv('Sales-Data.csv')
+from flask import Flask, request, render_template, redirect, url_for
+import pandas as pd
 
-df['Order Date'] = pd.to_datetime(df['Order Date'])
-df['Week'] = df['Order Date'].dt.isocalendar().week
-df.columns = df.columns.str.strip()
-grouped_data = df.groupby(['City', 'Week', 'Product']).agg({'Quantity Ordered': 'sum'}).reset_index()
+app = Flask(__name__)
 
-grouped_data['City'] = grouped_data['City'].str.strip()
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 
-onehot_encoder_city = OneHotEncoder(sparse_output=False)
-onehot_encoder_product = OneHotEncoder(sparse_output=False)
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return redirect(request.url)
+    file = request.files['file']
+    if file.filename == '':
+        return redirect(request.url)
+    if file:
+        df = pd.read_csv(file)
+        df['Order Date'] = pd.to_datetime(df['Order Date'])
+        df['Week'] = df['Order Date'].dt.isocalendar().week
+        df.columns = df.columns.str.strip()
+        grouped_data = df.groupby(['City', 'Week', 'Product']).agg({'Quantity Ordered': 'sum'}).reset_index()
+        grouped_data['City'] = grouped_data['City'].str.strip()
 
-encoded_cities = onehot_encoder_city.fit_transform(grouped_data[['City']])
-encoded_products = onehot_encoder_product.fit_transform(grouped_data[['Product']])
+        # Save the processed data to a CSV file
+        grouped_data.to_csv('processed_data.csv', index=False)
 
-encoded_cities_df = pd.DataFrame(encoded_cities, columns=onehot_encoder_city.get_feature_names_out(['City']))
-encoded_products_df = pd.DataFrame(encoded_products, columns=onehot_encoder_product.get_feature_names_out(['Product']))
+        # Get the unique weeks
+        weeks = grouped_data['Week'].unique()
 
-encoded_cities_df.columns = encoded_cities_df.columns.str.replace(' ', '_', regex=False)
-encoded_products_df.columns = encoded_products_df.columns.str.replace(' ', '_', regex=False)
+        return render_template('select_week.html', weeks=weeks)
 
-grouped_data_encoded = pd.concat([grouped_data, encoded_cities_df, encoded_products_df], axis=1)
 
-grouped_data_encoded.drop(columns=['City', 'Product'], inplace=True)
+@app.route('/train', methods=['POST'])
+def train_model():
+    selected_weeks = request.form.getlist('weeks')
+    # Load the processed data
+    grouped_data = pd.read_csv('processed_data.csv')
 
-joblib.dump(onehot_encoder_city, 'city_onehot_encoder.pkl')
-joblib.dump(onehot_encoder_product, 'product_onehot_encoder.pkl')
+    # Filter the data based on selected weeks
+    grouped_data = grouped_data[grouped_data['Week'].isin(map(int, selected_weeks))]
 
-grouped_data_encoded['Quantity Ordered'] = grouped_data_encoded['Quantity Ordered'].astype(float)
+    onehot_encoder_city = OneHotEncoder(sparse_output=False)
+    onehot_encoder_product = OneHotEncoder(sparse_output=False)
 
-# na zakresie 1-6 uczymy się na historii z 5 tygodni wstecz ile bylo trzeba zamowic. Tutaj zmieniamy do ilu wstecz patrzymy
-for i in range(1, 6):
-    grouped_data_encoded[f'Quantity_Ordered_T-{i}'] = grouped_data_encoded['Quantity Ordered'].shift(i)
+    encoded_cities = onehot_encoder_city.fit_transform(grouped_data[['City']])
+    encoded_products = onehot_encoder_product.fit_transform(grouped_data[['Product']])
 
-grouped_data_encoded = grouped_data_encoded.dropna()
-X = grouped_data_encoded.drop(['Quantity Ordered'], axis=1)
-y = grouped_data_encoded['Quantity Ordered']
+    encoded_cities_df = pd.DataFrame(encoded_cities, columns=onehot_encoder_city.get_feature_names_out(['City']))
+    encoded_products_df = pd.DataFrame(encoded_products, columns=onehot_encoder_product.get_feature_names_out(['Product']))
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-grouped_data_encoded.to_csv('nazwa_pliku.csv', index=False, sep=',', encoding='utf-8')
-numeric_features = X.select_dtypes(include=['float64']).columns.tolist()
-numeric_transformer = Pipeline(steps=[
-    ('scaler', StandardScaler())
-])
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('num', numeric_transformer, numeric_features),
+    encoded_cities_df.columns = encoded_cities_df.columns.str.replace(' ', '_', regex=False)
+    encoded_products_df.columns = encoded_products_df.columns.str.replace(' ', '_', regex=False)
+
+    grouped_data_encoded = pd.concat([grouped_data, encoded_cities_df, encoded_products_df], axis=1)
+
+    grouped_data_encoded.drop(columns=['City', 'Product'], inplace=True)
+
+    joblib.dump(onehot_encoder_city, 'city_onehot_encoder.pkl')
+    joblib.dump(onehot_encoder_product, 'product_onehot_encoder.pkl')
+
+    grouped_data_encoded['Quantity Ordered'] = grouped_data_encoded['Quantity Ordered'].astype(float)
+
+    # na zakresie 1-6 uczymy się na historii z 5 tygodni wstecz ile bylo trzeba zamowic. Tutaj zmieniamy do ilu wstecz patrzymy
+    for i in range(1, 6):
+        grouped_data_encoded[f'Quantity_Ordered_T-{i}'] = grouped_data_encoded['Quantity Ordered'].shift(i)
+
+    grouped_data_encoded = grouped_data_encoded.dropna()
+    X = grouped_data_encoded.drop(['Quantity Ordered'], axis=1)
+    y = grouped_data_encoded['Quantity Ordered']
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    grouped_data_encoded.to_csv('nazwa_pliku.csv', index=False, sep=',', encoding='utf-8')
+    numeric_features = X.select_dtypes(include=['float64']).columns.tolist()
+    numeric_transformer = Pipeline(steps=[
+        ('scaler', StandardScaler())
     ])
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+        ])
 
+    def objective(trial):
+        params = {
+            'n_estimators': trial.suggest_int('n_estimators', 50, 300),
+            'learning_rate': trial.suggest_uniform('learning_rate', 0.005, 0.3),
+            'num_leaves': trial.suggest_int('num_leaves', 10, 50),
+            'max_depth': trial.suggest_int('max_depth', 5, 25),
+            'min_child_samples': trial.suggest_int('min_child_samples', 10, 70),
+            'subsample': trial.suggest_uniform('subsample', 0.4, 1.0),
+            'colsample_bytree': trial.suggest_uniform('colsample_bytree', 0.5, 1.0)
+        }
 
-def objective(trial):
-    params = {
-        'n_estimators': trial.suggest_int('n_estimators', 50, 300),
-        'learning_rate': trial.suggest_uniform('learning_rate', 0.005, 0.3),
-        'num_leaves': trial.suggest_int('num_leaves', 10, 50),
-        'max_depth': trial.suggest_int('max_depth', 5, 25),
-        'min_child_samples': trial.suggest_int('min_child_samples', 10, 70),
-        'subsample': trial.suggest_uniform('subsample', 0.4, 1.0),
-        'colsample_bytree': trial.suggest_uniform('colsample_bytree', 0.5, 1.0)
-    }
+        model = lgb.LGBMRegressor(**params, random_state=42)
 
-    model = lgb.LGBMRegressor(**params, random_state=42)
+        pipeline = Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('regressor', model)
+        ])
 
-    pipeline = Pipeline(steps=[
+        pipeline.fit(X_train, y_train)
+        y_pred = pipeline.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+
+        return mse
+
+    study = optuna.create_study(direction='minimize')
+    study.optimize(objective, n_trials=20)
+
+    print("Best parameters found for LightGBM:")
+    print(study.best_params)
+
+    best_params = study.best_params
+    best_model = lgb.LGBMRegressor(**best_params, random_state=42)
+
+    pipeline_best = Pipeline(steps=[
         ('preprocessor', preprocessor),
-        ('regressor', model)
+        ('regressor', best_model)
     ])
 
-    pipeline.fit(X_train, y_train)
-    y_pred = pipeline.predict(X_test)
-    mse = mean_squared_error(y_test, y_pred)
+    pipeline_best.fit(X_train, y_train)
 
-    return mse
+    # Generate predictions for the next week for all cities and products
+    next_week = max(grouped_data_encoded['Week']) + 1
+    grouped_data_encoded['Week'] = next_week
 
-study = optuna.create_study(direction='minimize')
-study.optimize(objective, n_trials=20)
+    # Ensure the length of grouped_data_encoded matches the length of predictions_df
+    grouped_data_encoded = grouped_data_encoded.drop(columns=['Quantity Ordered'])
+    predicted_quantities = pipeline_best.predict(grouped_data_encoded)
 
-print("Best parameters found for LightGBM:")
-print(study.best_params)
+    # Create a DataFrame for the predictions
+    predictions_df = grouped_data[['City', 'Product']].drop_duplicates().reset_index(drop=True)
+    predictions_df['Week'] = next_week
+    predictions_df['Predicted Quantity Ordered'] = predicted_quantities[:len(predictions_df)]
 
-best_params = study.best_params
-best_model = lgb.LGBMRegressor(**best_params, random_state=42)
+    return render_template('predictions.html', tables=[predictions_df.to_html(classes='data', header="true")])
 
-pipeline_best = Pipeline(steps=[
-    ('preprocessor', preprocessor),
-    ('regressor', best_model)
-])
+if __name__ == '__main__':
+    app.run(debug=True)
 
-pipeline_best.fit(X_train, y_train)
-y_pred_best = pipeline_best.predict(X_test)
 
-mse_best = mean_squared_error(y_test, y_pred_best)
-r2_best = r2_score(y_test, y_pred_best)
+def _test():
+    df = pd.read_csv('Sales-Data.csv')
 
-results = [{
-    'Model': 'LightGBM',
-    'Params': study.best_params,
-    'Mean Squared Error': mse_best,
-    'R2 Score': r2_best
-}]
+    df['Order Date'] = pd.to_datetime(df['Order Date'])
+    df['Week'] = df['Order Date'].dt.isocalendar().week
+    df.columns = df.columns.str.strip()
+    grouped_data = df.groupby(['City', 'Week', 'Product']).agg({'Quantity Ordered': 'sum'}).reset_index()
 
-with open(r'results.txt', 'a') as f:
-    for result in results:
-        f.write(f"Model: {result['Model']}_1\n")
-        f.write(f"Params: {result['Params']}\n")
-        f.write(f"Mean Squared Error: {result['Mean Squared Error']:.4f}\n")
-        f.write(f"R2 Score: {result['R2 Score']:.4f}\n\n")
+    grouped_data['City'] = grouped_data['City'].str.strip()
 
-print("Results saved to results.txt")
 
-joblib.dump(pipeline_best, 'best_model.pkl')
-print("Model saved to best_model.pkl")
+    onehot_encoder_city = OneHotEncoder(sparse_output=False)
+    onehot_encoder_product = OneHotEncoder(sparse_output=False)
 
-selected_city = 'atlanta'
-selected_product = 'AAA Batteries (4-pack)'
+    encoded_cities = onehot_encoder_city.fit_transform(grouped_data[['City']])
+    encoded_products = onehot_encoder_product.fit_transform(grouped_data[['Product']])
 
-filter_mask = (grouped_data_encoded['City_Atlanta'] == 1) & (grouped_data_encoded['Product_AAA_Batteries_(4-pack)'] == 1)
-filtered_data = grouped_data_encoded[filter_mask]
+    encoded_cities_df = pd.DataFrame(encoded_cities, columns=onehot_encoder_city.get_feature_names_out(['City']))
+    encoded_products_df = pd.DataFrame(encoded_products, columns=onehot_encoder_product.get_feature_names_out(['Product']))
 
-filtered_X = filtered_data.drop(columns=['Quantity Ordered'])
-predicted_quantities = pipeline_best.predict(filtered_X)
+    encoded_cities_df.columns = encoded_cities_df.columns.str.replace(' ', '_', regex=False)
+    encoded_products_df.columns = encoded_products_df.columns.str.replace(' ', '_', regex=False)
 
-plt.figure(figsize=(12, 6))
-plt.plot(filtered_data['Week'], filtered_data['Quantity Ordered'], label='Rzeczywista Sprzedaż', marker='o')
-plt.plot(filtered_data['Week'], predicted_quantities, label='Przewidziana Sprzedaż', marker='x')
-plt.title(f'Porównanie Sprzedaży dla {selected_product} w {selected_city}')
-plt.xlabel('Tydzień')
-plt.ylabel('Ilość Zamówionych Produktów')
-plt.legend()
-plt.grid()
-plt.show()
+    grouped_data_encoded = pd.concat([grouped_data, encoded_cities_df, encoded_products_df], axis=1)
+
+    grouped_data_encoded.drop(columns=['City', 'Product'], inplace=True)
+
+    joblib.dump(onehot_encoder_city, 'city_onehot_encoder.pkl')
+    joblib.dump(onehot_encoder_product, 'product_onehot_encoder.pkl')
+
+    grouped_data_encoded['Quantity Ordered'] = grouped_data_encoded['Quantity Ordered'].astype(float)
+
+    # na zakresie 1-6 uczymy się na historii z 5 tygodni wstecz ile bylo trzeba zamowic. Tutaj zmieniamy do ilu wstecz patrzymy
+    for i in range(1, 6):
+        grouped_data_encoded[f'Quantity_Ordered_T-{i}'] = grouped_data_encoded['Quantity Ordered'].shift(i)
+
+    grouped_data_encoded = grouped_data_encoded.dropna()
+    X = grouped_data_encoded.drop(['Quantity Ordered'], axis=1)
+    y = grouped_data_encoded['Quantity Ordered']
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+    grouped_data_encoded.to_csv('nazwa_pliku.csv', index=False, sep=',', encoding='utf-8')
+    numeric_features = X.select_dtypes(include=['float64']).columns.tolist()
+    numeric_transformer = Pipeline(steps=[
+        ('scaler', StandardScaler())
+    ])
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numeric_transformer, numeric_features),
+        ])
+
+
+    def objective(trial):
+        params = {
+            'n_estimators': trial.suggest_int('n_estimators', 50, 300),
+            'learning_rate': trial.suggest_uniform('learning_rate', 0.005, 0.3),
+            'num_leaves': trial.suggest_int('num_leaves', 10, 50),
+            'max_depth': trial.suggest_int('max_depth', 5, 25),
+            'min_child_samples': trial.suggest_int('min_child_samples', 10, 70),
+            'subsample': trial.suggest_uniform('subsample', 0.4, 1.0),
+            'colsample_bytree': trial.suggest_uniform('colsample_bytree', 0.5, 1.0)
+        }
+
+        model = lgb.LGBMRegressor(**params, random_state=42)
+
+        pipeline = Pipeline(steps=[
+            ('preprocessor', preprocessor),
+            ('regressor', model)
+        ])
+
+        pipeline.fit(X_train, y_train)
+        y_pred = pipeline.predict(X_test)
+        mse = mean_squared_error(y_test, y_pred)
+
+        return mse
+
+
+    study = optuna.create_study(direction='minimize')
+    study.optimize(objective, n_trials=20)
+
+    print("Best parameters found for LightGBM:")
+    print(study.best_params)
+
+    best_params = study.best_params
+    best_model = lgb.LGBMRegressor(**best_params, random_state=42)
+
+    pipeline_best = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('regressor', best_model)
+    ])
+
+    pipeline_best.fit(X_train, y_train)
+    y_pred_best = pipeline_best.predict(X_test)
+
+    mse_best = mean_squared_error(y_test, y_pred_best)
+    r2_best = r2_score(y_test, y_pred_best)
+
+    results = [{
+        'Model': 'LightGBM',
+        'Params': study.best_params,
+        'Mean Squared Error': mse_best,
+        'R2 Score': r2_best
+    }]
+
+    with open(r'results.txt', 'a') as f:
+        for result in results:
+            f.write(f"Model: {result['Model']}_1\n")
+            f.write(f"Params: {result['Params']}\n")
+            f.write(f"Mean Squared Error: {result['Mean Squared Error']:.4f}\n")
+            f.write(f"R2 Score: {result['R2 Score']:.4f}\n\n")
+
+    print("Results saved to results.txt")
+
+    joblib.dump(pipeline_best, 'best_model.pkl')
+    print("Model saved to best_model.pkl")
+
+    selected_city = 'atlanta'
+    selected_product = 'AAA Batteries (4-pack)'
+
+    filter_mask = (grouped_data_encoded['City_Atlanta'] == 1) & (grouped_data_encoded['Product_AAA_Batteries_(4-pack)'] == 1)
+    filtered_data = grouped_data_encoded[filter_mask]
+
+    filtered_X = filtered_data.drop(columns=['Quantity Ordered'])
+    predicted_quantities = pipeline_best.predict(filtered_X)
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(filtered_data['Week'], filtered_data['Quantity Ordered'], label='Rzeczywista Sprzedaż', marker='o')
+    plt.plot(filtered_data['Week'], predicted_quantities, label='Przewidziana Sprzedaż', marker='x')
+    plt.title(f'Porównanie Sprzedaży dla {selected_product} w {selected_city}')
+    plt.xlabel('Tydzień')
+    plt.ylabel('Ilość Zamówionych Produktów')
+    plt.legend()
+    plt.grid()
+    plt.show()
