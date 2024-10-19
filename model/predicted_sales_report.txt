@@ -1,0 +1,162 @@
+Przewidywania na tydzieñ: 40
+Miasto	Produkt	Przewidziana Iloœæ Zamówieñ
+Atlanta	20in Monitor	5.22
+Atlanta	27in 4K Gaming Monitor	6.71
+Atlanta	27in FHD Monitor	8.36
+Atlanta	34in Ultrawide Monitor	6.95
+Atlanta	AA Batteries (4-pack)	35.13
+Atlanta	AAA Batteries (4-pack)	35.54
+Atlanta	Apple Airpods Headphones	19.36
+Atlanta	Bose SoundSport Headphones	17.63
+Atlanta	Flatscreen TV	6.66
+Atlanta	Google Phone	7.43
+Atlanta	Lightning Charging Cable	41.71
+Atlanta	Macbook Pro Laptop	5.49
+Atlanta	ThinkPad Laptop	5.31
+Atlanta	USB-C Charging Cable	33.89
+Atlanta	Vareebadd Phone	3.22
+Atlanta	Wired Headphones	30.27
+Atlanta	iPhone	8.85
+Austin	20in Monitor	3.87
+Austin	27in 4K Gaming Monitor	5.49
+Austin	27in FHD Monitor	6.76
+Austin	34in Ultrawide Monitor	4.72
+Austin	AA Batteries (4-pack)	22.99
+Austin	AAA Batteries (4-pack)	26.57
+Austin	Apple Airpods Headphones	13.08
+Austin	Bose SoundSport Headphones	11.12
+Austin	Flatscreen TV	6.68
+Austin	Google Phone	5.01
+Austin	Lightning Charging Cable	31.90
+Austin	Macbook Pro Laptop	3.88
+Austin	ThinkPad Laptop	4.52
+Austin	USB-C Charging Cable	21.77
+Austin	Vareebadd Phone	2.24
+Austin	Wired Headphones	18.97
+Austin	iPhone	6.90
+Boston	20in Monitor	7.12
+Boston	27in 4K Gaming Monitor	11.23
+Boston	27in FHD Monitor	12.49
+Boston	34in Ultrawide Monitor	9.80
+Boston	AA Batteries (4-pack)	44.05
+Boston	AAA Batteries (4-pack)	52.58
+Boston	Apple Airpods Headphones	24.82
+Boston	Bose SoundSport Headphones	18.54
+Boston	Flatscreen TV	8.84
+Boston	Google Phone	9.56
+Boston	LG Dryer	3.52
+Boston	Lightning Charging Cable	31.70
+Boston	Macbook Pro Laptop	9.09
+Boston	ThinkPad Laptop	6.65
+Boston	USB-C Charging Cable	44.51
+Boston	Vareebadd Phone	5.49
+Boston	Wired Headphones	31.79
+Boston	iPhone	13.51
+Dallas	20in Monitor	6.19
+Dallas	27in 4K Gaming Monitor	7.65
+Dallas	27in FHD Monitor	8.90
+Dallas	34in Ultrawide Monitor	9.74
+Dallas	AA Batteries (4-pack)	41.60
+Dallas	AAA Batteries (4-pack)	42.64
+Dallas	Apple Airpods Headphones	22.02
+Dallas	Bose SoundSport Headphones	17.04
+Dallas	Flatscreen TV	6.54
+Dallas	Google Phone	6.93
+Dallas	LG Washing Machine	0.50
+Dallas	Lightning Charging Cable	27.52
+Dallas	Macbook Pro Laptop	5.35
+Dallas	ThinkPad Laptop	4.66
+Dallas	USB-C Charging Cable	27.55
+Dallas	Vareebadd Phone	2.66
+Dallas	Wired Headphones	24.35
+Dallas	iPhone	8.58
+Los Angeles	20in Monitor	8.51
+Los Angeles	27in 4K Gaming Monitor	17.27
+Los Angeles	27in FHD Monitor	21.64
+Los Angeles	34in Ultrawide Monitor	19.13
+Los Angeles	AA Batteries (4-pack)	69.26
+Los Angeles	AAA Batteries (4-pack)	83.71
+Los Angeles	Apple Airpods Headphones	36.47
+Los Angeles	Bose SoundSport Headphones	32.52
+Los Angeles	Flatscreen TV	10.86
+Los Angeles	Google Phone	13.17
+Los Angeles	LG Dryer	3.06
+Los Angeles	Lightning Charging Cable	52.60
+Los Angeles	Macbook Pro Laptop	15.46
+Los Angeles	ThinkPad Laptop	11.97
+Los Angeles	USB-C Charging Cable	58.72
+Los Angeles	Vareebadd Phone	5.75
+Los Angeles	Wired Headphones	45.33
+Los Angeles	iPhone	18.73
+New York City	20in Monitor	9.29
+New York City	27in 4K Gaming Monitor	15.65
+New York City	27in FHD Monitor	17.87
+New York City	34in Ultrawide Monitor	18.44
+New York City	AA Batteries (4-pack)	61.16
+New York City	AAA Batteries (4-pack)	79.80
+New York City	Apple Airpods Headphones	31.29
+New York City	Bose SoundSport Headphones	31.79
+New York City	Flatscreen TV	10.04
+New York City	Google Phone	11.93
+New York City	LG Washing Machine	2.80
+New York City	Lightning Charging Cable	43.58
+New York City	Macbook Pro Laptop	11.39
+New York City	ThinkPad Laptop	8.51
+New York City	USB-C Charging Cable	49.35
+New York City	Vareebadd Phone	6.28
+New York City	Wired Headphones	40.87
+New York City	iPhone	15.65
+Portland	20in Monitor	5.13
+Portland	27in 4K Gaming Monitor	5.60
+Portland	27in FHD Monitor	7.09
+Portland	34in Ultrawide Monitor	4.82
+Portland	AA Batteries (4-pack)	27.38
+Portland	AAA Batteries (4-pack)	30.73
+Portland	Apple Airpods Headphones	15.59
+Portland	Bose SoundSport Headphones	13.40
+Portland	Flatscreen TV	5.47
+Portland	Google Phone	6.22
+Portland	LG Dryer	0.10
+Portland	Lightning Charging Cable	25.63
+Portland	Macbook Pro Laptop	5.18
+Portland	ThinkPad Laptop	3.85
+Portland	USB-C Charging Cable	22.66
+Portland	Vareebadd Phone	2.53
+Portland	Wired Headphones	20.60
+Portland	iPhone	6.28
+San Francisco	20in Monitor	14.91
+San Francisco	27in 4K Gaming Monitor	23.89
+San Francisco	27in FHD Monitor	26.20
+San Francisco	34in Ultrawide Monitor	17.79
+San Francisco	AA Batteries (4-pack)	101.06
+San Francisco	AAA Batteries (4-pack)	93.34
+San Francisco	Apple Airpods Headphones	54.24
+San Francisco	Bose SoundSport Headphones	55.51
+San Francisco	Flatscreen TV	15.83
+San Francisco	Google Phone	18.09
+San Francisco	LG Washing Machine	3.94
+San Francisco	Lightning Charging Cable	64.24
+San Francisco	Macbook Pro Laptop	14.79
+San Francisco	ThinkPad Laptop	16.04
+San Francisco	USB-C Charging Cable	81.77
+San Francisco	Vareebadd Phone	4.67
+San Francisco	Wired Headphones	74.16
+San Francisco	iPhone	20.04
+Seattle	20in Monitor	5.61
+Seattle	27in 4K Gaming Monitor	7.49
+Seattle	27in FHD Monitor	8.42
+Seattle	34in Ultrawide Monitor	7.99
+Seattle	AA Batteries (4-pack)	37.63
+Seattle	AAA Batteries (4-pack)	42.59
+Seattle	Apple Airpods Headphones	17.33
+Seattle	Bose SoundSport Headphones	16.27
+Seattle	Flatscreen TV	7.35
+Seattle	Google Phone	7.89
+Seattle	LG Dryer	0.64
+Seattle	Lightning Charging Cable	32.14
+Seattle	Macbook Pro Laptop	5.82
+Seattle	ThinkPad Laptop	3.73
+Seattle	USB-C Charging Cable	25.97
+Seattle	Vareebadd Phone	2.44
+Seattle	Wired Headphones	23.15
+Seattle	iPhone	7.30
