@@ -1,0 +1,5 @@
+Model: LightGBM_1
+Params: {'n_estimators': 294, 'learning_rate': 0.1004709292673718, 'num_leaves': 49, 'max_depth': 5, 'min_child_samples': 13, 'subsample': 0.7797857374860224, 'colsample_bytree': 0.9480994027913277}
+Mean Squared Error: 62.0413
+R2 Score: 0.9167
+
