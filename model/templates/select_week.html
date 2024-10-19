@@ -3,15 +3,24 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <title>Select Weeks</title>
   </head>
   <body>
     <div class="container">
-      <h1>Select Weeks for Training</h1>
+      <h1 class="my-4">Select Week Range for Training</h1>
       <form method="post" action="/train">
         <div class="form-group">
-          <label for="weeks">Choose weeks</label>
-          <select multiple class="form-control" id="weeks" name="weeks">
+          <label for="start_week">Start Week</label>
+          <select class="form-control" id="start_week" name="start_week">
+            {% for week in weeks %}
+              <option value="{{ week }}">{{ week }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="end_week">End Week</label>
+          <select class="form-control" id="end_week" name="end_week">
             {% for week in weeks %}
               <option value="{{ week }}">{{ week }}</option>
             {% endfor %}
@@ -20,5 +29,8 @@
         <button type="submit" class="btn btn-primary">Train Model</button>
       </form>
     </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   </body>
 </html>

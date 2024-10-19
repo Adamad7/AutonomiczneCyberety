@@ -47,12 +47,18 @@ def upload_file():
 
 @app.route('/train', methods=['POST'])
 def train_model():
-    selected_weeks = request.form.getlist('weeks')
+    start_week = int(request.form['start_week'])
+    end_week = int(request.form['end_week'])
+    selected_weeks = list(range(start_week, end_week + 1))
+
     # Load the processed data
     grouped_data = pd.read_csv('processed_data.csv')
 
     # Filter the data based on selected weeks
-    grouped_data = grouped_data[grouped_data['Week'].isin(map(int, selected_weeks))]
+    grouped_data = grouped_data[grouped_data['Week'].isin(selected_weeks)]
+
+    if grouped_data.empty:
+        return "No data available for the selected weeks."
 
     onehot_encoder_city = OneHotEncoder(sparse_output=False)
     onehot_encoder_product = OneHotEncoder(sparse_output=False)
@@ -61,7 +67,8 @@ def train_model():
     encoded_products = onehot_encoder_product.fit_transform(grouped_data[['Product']])
 
     encoded_cities_df = pd.DataFrame(encoded_cities, columns=onehot_encoder_city.get_feature_names_out(['City']))
-    encoded_products_df = pd.DataFrame(encoded_products, columns=onehot_encoder_product.get_feature_names_out(['Product']))
+    encoded_products_df = pd.DataFrame(encoded_products,
+                                       columns=onehot_encoder_product.get_feature_names_out(['Product']))
 
     encoded_cities_df.columns = encoded_cities_df.columns.str.replace(' ', '_', regex=False)
     encoded_products_df.columns = encoded_products_df.columns.str.replace(' ', '_', regex=False)
@@ -75,16 +82,21 @@ def train_model():
 
     grouped_data_encoded['Quantity Ordered'] = grouped_data_encoded['Quantity Ordered'].astype(float)
 
-    # na zakresie 1-6 uczymy się na historii z 5 tygodni wstecz ile bylo trzeba zamowic. Tutaj zmieniamy do ilu wstecz patrzymy
-    for i in range(1, 6):
+    for i in range(1, end_week):
         grouped_data_encoded[f'Quantity_Ordered_T-{i}'] = grouped_data_encoded['Quantity Ordered'].shift(i)
 
     grouped_data_encoded = grouped_data_encoded.dropna()
     X = grouped_data_encoded.drop(['Quantity Ordered'], axis=1)
     y = grouped_data_encoded['Quantity Ordered']
 
+    if X.empty or y.empty:
+        return "No data available after preprocessing."
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-    grouped_data_encoded.to_csv('nazwa_pliku.csv', index=False, sep=',', encoding='utf-8')
+
+    if X_train.empty or y_train.empty or X_test.empty or y_test.empty:
+        return "Training or testing data is empty."
+
     numeric_features = X.select_dtypes(include=['float64']).columns.tolist()
     numeric_transformer = Pipeline(steps=[
         ('scaler', StandardScaler())
@@ -121,9 +133,6 @@ def train_model():
     study = optuna.create_study(direction='minimize')
     study.optimize(objective, n_trials=20)
 
-    print("Best parameters found for LightGBM:")
-    print(study.best_params)
-
     best_params = study.best_params
     best_model = lgb.LGBMRegressor(**best_params, random_state=42)
 
@@ -134,20 +143,20 @@ def train_model():
 
     pipeline_best.fit(X_train, y_train)
 
-    # Generate predictions for the next week for all cities and products
     next_week = max(grouped_data_encoded['Week']) + 1
     grouped_data_encoded['Week'] = next_week
 
-    # Ensure the length of grouped_data_encoded matches the length of predictions_df
     grouped_data_encoded = grouped_data_encoded.drop(columns=['Quantity Ordered'])
     predicted_quantities = pipeline_best.predict(grouped_data_encoded)
 
-    # Create a DataFrame for the predictions
     predictions_df = grouped_data[['City', 'Product']].drop_duplicates().reset_index(drop=True)
-    predictions_df['Week'] = next_week
     predictions_df['Predicted Quantity Ordered'] = predicted_quantities[:len(predictions_df)]
 
-    return render_template('predictions.html', tables=[predictions_df.to_html(classes='data', header="true")])
+    city_tables = []
+    for city, city_df in predictions_df.groupby('City'):
+        city_tables.append((city, city_df.drop(columns=['City']).to_html(classes='table table-striped', header="true")))
+
+    return render_template('predictions.html', city_tables=city_tables)
 
 if __name__ == '__main__':
     app.run(debug=True)
