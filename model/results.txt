@@ -3,3 +3,68 @@ Params: {'n_estimators': 294, 'learning_rate': 0.1004709292673718, 'num_leaves':
 Mean Squared Error: 62.0413
 R2 Score: 0.9167
 
+Model: LightGBM_1
+Params: {'n_estimators': 266, 'learning_rate': 0.04014445865551453, 'num_leaves': 32, 'max_depth': 16, 'min_child_samples': 18, 'subsample': 0.7090944147681051, 'colsample_bytree': 0.5054485643562125}
+Mean Squared Error: 59.2743
+R2 Score: 0.9204
+
+Model: LightGBM_1
+Params: {'n_estimators': 117, 'learning_rate': 0.29881455074425145, 'num_leaves': 20, 'max_depth': 14, 'min_child_samples': 26, 'subsample': 0.6796589057279789, 'colsample_bytree': 0.6822806557565075}
+Mean Squared Error: 89.4914
+R2 Score: 0.8796
+
+Model: LightGBM_1
+Params: {'n_estimators': 55, 'learning_rate': 0.07087840628858826, 'num_leaves': 50, 'max_depth': 21, 'min_child_samples': 10, 'subsample': 0.4969530680593911, 'colsample_bytree': 0.8276340905853073}
+Mean Squared Error: 68.8565
+R2 Score: 0.9017
+
+Model: LightGBM_1
+Params: {'n_estimators': 254, 'learning_rate': 0.0664069430183054, 'num_leaves': 31, 'max_depth': 9, 'min_child_samples': 16, 'subsample': 0.908487349809752, 'colsample_bytree': 0.8520661087266824}
+Mean Squared Error: 65.3323
+R2 Score: 0.9115
+
+Model: LightGBM_1
+Params: {'n_estimators': 80, 'learning_rate': 0.21090099268074103, 'num_leaves': 23, 'max_depth': 9, 'min_child_samples': 11, 'subsample': 0.4056761769616883, 'colsample_bytree': 0.8577509516206742}
+Mean Squared Error: 60.5640
+R2 Score: 0.9193
+
+Model: LightGBM_1
+Params: {'n_estimators': 70, 'learning_rate': 0.13674969876820378, 'num_leaves': 21, 'max_depth': 7, 'min_child_samples': 15, 'subsample': 0.45165231049167154, 'colsample_bytree': 0.5768675763640004}
+Mean Squared Error: 75.2278
+R2 Score: 0.9125
+
+Model: LightGBM_1
+Params: {'n_estimators': 300, 'learning_rate': 0.12686537107575163, 'num_leaves': 10, 'max_depth': 9, 'min_child_samples': 10, 'subsample': 0.9823764537944328, 'colsample_bytree': 0.6532351948249717}
+Mean Squared Error: 87.4823
+R2 Score: 0.8823
+
+Model: LightGBM_1
+Params: {'n_estimators': 142, 'learning_rate': 0.21443012939010422, 'num_leaves': 10, 'max_depth': 11, 'min_child_samples': 10, 'subsample': 0.8316185523055221, 'colsample_bytree': 0.5079456440738257}
+Mean Squared Error: 69.6500
+R2 Score: 0.9005
+
+Model: LightGBM_1
+Params: {'n_estimators': 158, 'learning_rate': 0.15408797894307946, 'num_leaves': 22, 'max_depth': 9, 'min_child_samples': 29, 'subsample': 0.9569624830481114, 'colsample_bytree': 0.8535805847502204}
+Mean Squared Error: 66.4589
+R2 Score: 0.9099
+
+Model: LightGBM_1
+Params: {'n_estimators': 129, 'learning_rate': 0.17270463494661542, 'num_leaves': 10, 'max_depth': 15, 'min_child_samples': 20, 'subsample': 0.5271744219154375, 'colsample_bytree': 0.7412101228535687}
+Mean Squared Error: 60.5822
+R2 Score: 0.9193
+
+Model: LightGBM_1
+Params: {'n_estimators': 250, 'learning_rate': 0.2309343036816973, 'num_leaves': 10, 'max_depth': 17, 'min_child_samples': 10, 'subsample': 0.4018363291008865, 'colsample_bytree': 0.5017172687392748}
+Mean Squared Error: 70.7268
+R2 Score: 0.9177
+
+Model: LightGBM_1
+Params: {'n_estimators': 154, 'learning_rate': 0.06128759095315621, 'num_leaves': 18, 'max_depth': 25, 'min_child_samples': 11, 'subsample': 0.403859162650968, 'colsample_bytree': 0.8095361591931184}
+Mean Squared Error: 55.8389
+R2 Score: 0.9174
+
+Model: LightGBM_1
+Params: {'n_estimators': 110, 'learning_rate': 0.038346176750560804, 'num_leaves': 41, 'max_depth': 8, 'min_child_samples': 10, 'subsample': 0.5757274666593334, 'colsample_bytree': 0.7970112318223546}
+Mean Squared Error: 55.9104
+R2 Score: 0.9173
+
