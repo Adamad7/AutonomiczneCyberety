@@ -1,20 +1,30 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Upload CSV</title>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Upload CSV File</h1>
-      <form method="post" action="/upload" enctype="multipart/form-data">
-        <div class="form-group">
-          <label for="file">Choose CSV file</label>
-          <input type="file" class="form-control" id="file" name="file">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <title>Wprowadź dane</title>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="h3 mb-0">Wprowadź dane sprzedaży</h1>
+            </div>
+            <div class="card-body">
+                <form method="post" action="/upload" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="file">Wybierz plik CSV</label>
+                        <input type="file" class="form-control-file" id="file" name="file">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Wyślij</button>
+                </form>
+            </div>
         </div>
-        <button type="submit" class="btn btn-primary">Upload</button>
-      </form>
     </div>
-  </body>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
 </html>

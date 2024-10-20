@@ -8,30 +8,45 @@
 </head>
 <body>
 <div class="container">
-    <h1>Przewidywana sprzedaż produktów w następnym tygodniu</h1>
+    <h1>Przewidywana sprzedaż produktów w następnym tygodniu na podstawie tygodni {{start_week}}-{{end_week}}</h1>
 
     {% for city, products in predictions.items() %}
-    <h2>{{ city }}</h2>
+    <h2 style="padding-top: 50px">{{ city }}</h2>
     <table class="table table-striped">
         <thead>
         <tr>
             <th>Produkt</th>
             <th>Przewidywana sprzedaż</th>
+            <th>Cena jednostkowa</th>
+            <th>Cena całkowita</th>
             <th>Dane historyczne</th>
         </tr>
         </thead>
         <tbody>
+            {% set total_quantity = 0 %}
+            {% set total_cost = 0 %}
             {% for product, data in products.items() %}
             {% if product != 'transport' %}
             <tr>
                 <td>{{ product }}</td>
                 <td>{{ data.predicted_sales }}</td>
+                <td>{{ data.unit_price }}</td>
+                <td>{{ '%.2f' % (data.unit_price * data.predicted_sales) }}</td>
                 <td>
                     <button class="btn btn-primary" onclick="showChart('{{ city }}', '{{ product }}', {{ data.historical_sales | tojson }}, {{ start_week }})">Pokaż dane historyczne</button>
                 </td>
             </tr>
+            {% set total_quantity = total_quantity + data.predicted_sales %}
+            {% set total_cost = total_cost + (data.unit_price * data.predicted_sales) %}
             {% endif %}
             {% endfor %}
+            <tr>
+                <td><strong>Podsumowanie</strong></td>
+                <td><strong>{{ total_sales[city] }}</strong></td>
+                <td></td>
+                <td><strong>{{ '%.2f' % total_order_values[city] }}</strong></td>
+                <td></td>
+            </tr>
         </tbody>
     </table>
     <h3>Optymalny transport</h3>
@@ -63,7 +78,6 @@ let chartInstance = null;
 function showChart(city, product, historicalSales, startWeek) {
     const ctx = document.getElementById('salesChart').getContext('2d');
 
-    // Destroy the previous chart instance if it exists
     if (chartInstance) {
         chartInstance.destroy();
     }
@@ -73,7 +87,7 @@ function showChart(city, product, historicalSales, startWeek) {
         data: {
             labels: Array.from({length: historicalSales.length}, (_, i) => startWeek + i),
             datasets: [{
-                label: `${product} Sales in ${city}`,
+                label: `Historia sprzedaży '${product}' w mieście '${city}'`,
                 data: historicalSales,
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1,
@@ -85,14 +99,14 @@ function showChart(city, product, historicalSales, startWeek) {
                 x: {
                     title: {
                         display: true,
-                        text: 'Week'
+                        text: 'Tydzień'
                     }
                 },
                 y: {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Sales'
+                        text: 'Sprzedaż'
                     }
                 }
             },

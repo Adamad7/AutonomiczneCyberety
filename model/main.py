@@ -10,16 +10,7 @@ import pandas as pd
 import numpy as np
 app = Flask(__name__)
 
-EXPECTED_COLUMNS = [
-    '', 'Order ID', 'Product', 'Quantity Ordered', 'Price Each', 'Order Date',
-    'Purchase Address', 'Month', 'Sales', 'City', 'Hour'
-]
-
-def validate_csv(file):
-    df = pd.read_csv(file)
-    if list(df.columns) != EXPECTED_COLUMNS:
-        return False
-    return True
+product_prices_map = {}
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -34,6 +25,9 @@ def upload_file():
         return redirect(request.url)
     if file:
         df = pd.read_csv(file)
+        product_prices = df[['Product', 'Price Each']].drop_duplicates()
+        global product_prices_map
+        product_prices_map = product_prices.set_index('Product')['Price Each'].to_dict()
         df['Order Date'] = pd.to_datetime(df['Order Date'])
         df['Week'] = df['Order Date'].dt.isocalendar().week
         df.columns = df.columns.str.strip()
@@ -50,11 +44,13 @@ def upload_file():
 
 @app.route('/train', methods=['POST'])
 def train_model3():
+
     start_week = int(request.form['start_week'])
     end_week = int(request.form['end_week'])
     selected_weeks = list(range(start_week, end_week + 1))
 
     grouped_data = pd.read_csv('processed_data.csv')
+
 
     onehot_encoder_city = OneHotEncoder(sparse_output=False)
     onehot_encoder_product = OneHotEncoder(sparse_output=False)
@@ -74,7 +70,7 @@ def train_model3():
     grouped_data_encoded = grouped_data_encoded[grouped_data_encoded['Week'].isin(selected_weeks)]
     grouped_data_encoded['Quantity Ordered'] = grouped_data_encoded['Quantity Ordered'].astype(float)
 
-    for i in range(1, end_week+1):
+    for i in range(1, min(4, end_week - start_week)):
         grouped_data_encoded[f'Quantity_Ordered_T-{i}'] = grouped_data_encoded['Quantity Ordered'].shift(i)
 
     grouped_data_encoded = grouped_data_encoded.dropna()
@@ -134,7 +130,7 @@ def train_model3():
 
     city_columns = [col for col in grouped_data_encoded.columns if col.startswith('City_')]
     product_columns = [col for col in grouped_data_encoded.columns if col.startswith('Product_')]
-
+    print(product_prices_map)
     historical_sales = {}
     for city in grouped_data['City'].unique():
         historical_sales[city] = {}
@@ -152,7 +148,8 @@ def train_model3():
                     historical_sales[city][product].append(0)
 
     prediction_data = {}
-
+    total_sales_in_cities = {}
+    total_order_values_in_cities = {}
     for city_col in city_columns:
         city_name = city_col.replace('City_', '').replace('_', ' ')
         prediction_data[city_name] = {}
@@ -170,18 +167,29 @@ def train_model3():
                 next_week_data = relevant_data[relevant_data['Week'] == relevant_data['Week'].max()].copy()
                 next_week_data['Week'] = week_pred
 
-                for i in range(1, end_week - start_week):
+                for i in range(1, min(4, end_week - start_week)):
                     if f'Quantity_Ordered_T-{i}' in relevant_data.columns:
                         next_week_data[f'Quantity_Ordered_T-{i}'] = relevant_data[f'Quantity_Ordered_T-{i}'].values[-1]
 
 
                 prediction_data[city_name][product_name]['historical_sales'] = historical_sales[city_name][product_name]
 
+
+
                 next_week_data = next_week_data.drop(columns=['Quantity Ordered'], errors='ignore')
                 predicted_quantity = pipeline_best.predict(next_week_data)[0]
                 prediction_data[city_name][product_name]['predicted_sales'] = int(max(np.ceil(predicted_quantity), 0))
+                # prediction_data[city_name][product_name]['product_price'] = next_week_data['Price Each'].values[0]
+                prediction_data[city_name][product_name]['unit_price'] = product_prices_map[product_name]
+
             else:
                 print(f"Brak wystarczających danych dla {product_name} w {city_name} na tydzień {week_pred}.")
+        total_sales_in_cities[city_name] = sum(
+            [data['predicted_sales'] for data in prediction_data[city_name].values()])
+        total_order_values_in_cities[city_name] = sum(
+            [data['predicted_sales'] * data['unit_price'] for data in prediction_data[city_name].values()])
+
+    print(prediction_data)
 
     product_sizes = {
         '20in Monitor': 0.05,
@@ -233,7 +241,7 @@ def train_model3():
             'cars': int(car_number)
         }
 
-    return render_template('predictions.html', predictions=prediction_data, start_week=start_week)
+    return render_template('predictions.html', predictions=prediction_data, start_week=start_week, end_week=end_week, total_sales=total_sales_in_cities, total_order_values=total_order_values_in_cities)
 
 if __name__ == '__main__':
     app.run(debug=True)
