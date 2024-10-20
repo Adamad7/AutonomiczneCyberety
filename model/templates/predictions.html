@@ -9,6 +9,7 @@
 <body>
 <div class="container">
     <h1>Przewidywana sprzedaż produktów w następnym tygodniu</h1>
+
     {% for city, products in predictions.items() %}
     <h2>{{ city }}</h2>
     <table class="table table-striped">
@@ -21,6 +22,7 @@
         </thead>
         <tbody>
             {% for product, data in products.items() %}
+            {% if product != 'transport' %}
             <tr>
                 <td>{{ product }}</td>
                 <td>{{ data.predicted_sales }}</td>
@@ -28,9 +30,12 @@
                     <button class="btn btn-primary" onclick="showChart('{{ city }}', '{{ product }}', {{ data.historical_sales | tojson }}, {{ start_week }})">Pokaż dane historyczne</button>
                 </td>
             </tr>
+            {% endif %}
             {% endfor %}
         </tbody>
     </table>
+    <h3>Optymalny transport</h3>
+    <p>{{ products.transport.packages }} paczek</p>
     {% endfor %}
 </div>
 
