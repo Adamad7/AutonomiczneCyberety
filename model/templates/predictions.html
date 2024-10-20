@@ -1,62 +1,3 @@
-<!--<!doctype html>-->
-<!--<html lang="en">-->
-<!--  <head>-->
-<!--    <meta charset="utf-8">-->
-<!--    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">-->
-<!--    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">-->
-<!--    <title>Predictions</title>-->
-<!--  </head>-->
-<!--  <body>-->
-<!--    <div class="container">-->
-<!--      <h1 class="my-4">Predicted Quantities for Next Week</h1>-->
-<!--      {% for city, table in city_tables %}-->
-<!--        <h2>{{ city }}</h2>-->
-<!--        <div class="table-responsive">-->
-<!--          {{ table|safe }}-->
-<!--        </div>-->
-<!--      {% endfor %}-->
-<!--    </div>-->
-<!--    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>-->
-<!--    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>-->
-<!--    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>-->
-<!--  </body>-->
-<!--</html>-->
-
-
-
-<!--<!DOCTYPE html>-->
-<!--<html lang="en">-->
-<!--<head>-->
-<!--    <meta charset="UTF-8">-->
-<!--    <title>Predictions</title>-->
-<!--    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">-->
-<!--</head>-->
-<!--<body>-->
-<!--<div class="container">-->
-<!--    <h1>Predicted Sales Report</h1>-->
-<!--    <table class="table table-striped">-->
-<!--        <thead>-->
-<!--        <tr>-->
-<!--            <th>City</th>-->
-<!--            <th>Product</th>-->
-<!--            <th>Predicted Quantity Ordered</th>-->
-<!--        </tr>-->
-<!--        </thead>-->
-<!--        <tbody>-->
-<!--        {% for prediction in predictions %}-->
-<!--            <tr>-->
-<!--                <td>{{ prediction.city }}</td>-->
-<!--                <td>{{ prediction.product }}</td>-->
-<!--                <td>{{ prediction.quantity }}</td>-->
-<!--            </tr>-->
-<!--        {% endfor %}-->
-<!--        </tbody>-->
-<!--    </table>-->
-<!--</div>-->
-<!--</body>-->
-<!--</html>-->
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -67,29 +8,30 @@
 </head>
 <body>
 <div class="container">
-    <h1>Predicted Sales Report</h1>
+    <h1>Przewidywana sprzedaż produktów w następnym tygodniu</h1>
+    {% for city, products in predictions.items() %}
+    <h2>{{ city }}</h2>
     <table class="table table-striped">
         <thead>
         <tr>
-            <th>City</th>
-            <th>Product</th>
-            <th>Predicted Quantity Ordered</th>
-            <th>Action</th>
+            <th>Produkt</th>
+            <th>Przewidywana sprzedaż</th>
+            <th>Dane historyczne</th>
         </tr>
         </thead>
         <tbody>
-        {% for prediction in predictions %}
-        <tr>
-            <td>{{ prediction.city }}</td>
-            <td>{{ prediction.product }}</td>
-            <td>{{ prediction.predicted_quantity }}</td>
-            <td>
-                <button class="btn btn-primary" onclick="showChart('{{ prediction.city }}', '{{ prediction.product }}', {{ prediction.historical_sales | tojson }}, {{ prediction.start_week}})">Show Chart</button>
-            </td>
-        </tr>
-        {% endfor %}
+            {% for product, data in products.items() %}
+            <tr>
+                <td>{{ product }}</td>
+                <td>{{ data.predicted_sales }}</td>
+                <td>
+                    <button class="btn btn-primary" onclick="showChart('{{ city }}', '{{ product }}', {{ data.historical_sales | tojson }}, {{ start_week }})">Pokaż dane historyczne</button>
+                </td>
+            </tr>
+            {% endfor %}
         </tbody>
     </table>
+    {% endfor %}
 </div>
 
 <!-- Modal for displaying the chart -->

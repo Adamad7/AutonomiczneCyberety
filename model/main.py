@@ -7,8 +7,7 @@ import lightgbm as lgb
 import optuna
 from flask import Flask, request, render_template, redirect
 import pandas as pd
-import os
-
+import numpy as np
 app = Flask(__name__)
 
 EXPECTED_COLUMNS = [
@@ -142,104 +141,88 @@ def train_model3():
     city_columns = [col for col in grouped_data_encoded.columns if col.startswith('City_')]
     product_columns = [col for col in grouped_data_encoded.columns if col.startswith('Product_')]
 
-    report_file_path = 'historical_sales_report.txt'
     historical_sales = {}
-    with open(report_file_path, 'w') as file:
-        for city in grouped_data['City'].unique():
-            historical_sales[city] = {}
-            for product in grouped_data['Product'].unique():
-                file.write(f'{city};{product};')
-                historical_sales[city][product] = []
+    for city in grouped_data['City'].unique():
+        historical_sales[city] = {}
+        for product in grouped_data['Product'].unique():
+            historical_sales[city][product] = []
 
-                for day in range(start_week, end_week + 1):
-                    mask = (grouped_data['City'] == city) & (grouped_data['Product'] == product) & (
-                                grouped_data['Week'] == day)
-                    filtered_data = grouped_data.loc[mask, 'Quantity Ordered']
+            for day in range(start_week, end_week + 1):
+                mask = (grouped_data['City'] == city) & (grouped_data['Product'] == product) & (
+                            grouped_data['Week'] == day)
+                filtered_data = grouped_data.loc[mask, 'Quantity Ordered']
 
-                    # Jeżeli są dane dla tego dnia, zapisz liczbę zamówień; jeśli nie, zapisz 0
-                    if not filtered_data.empty:
-                        file.write(f'{int(filtered_data.values[0])};')
-                        historical_sales[city][product].append(int(filtered_data.values[0]))
-                    else:
-                        file.write('0;')  # Brak danych - 0
-                        historical_sales[city][product].append(0)
-
-                # Nowa linia po każdym produkcie
-                file.write('\n')
-
-    print(historical_sales)
-    report_file_path = 'predicted_sales_report.txt'
-    # Tworzymy nowy plik i zapisujemy nagłówki
-    with open(report_file_path, 'w') as file:
-        file.write(f'Przewidywania na tydzień: {week_pred}\n')
-        file.write('Miasto\tProdukt\tPrzewidziana Ilość Zamówień\n')
-
-        # Iterujemy po każdym mieście
-        for city_col in city_columns:
-            city_name = city_col.replace('City_', '').replace('_', ' ')
-
-            # Iterujemy po każdym produkcie
-            for product_col in product_columns:
-                product_name = product_col.replace('Product_', '').replace('_', ' ')
-
-                # Tworzymy maskę dla wybranego miasta i produktu
-                filter_mask = (grouped_data_encoded[city_col] == 1) & (grouped_data_encoded[product_col] == 1)
-                filtered_data = grouped_data_encoded[filter_mask]
-
-                # Sprawdzamy, czy dane istnieją dla danego miasta i produktu
-                if len(filtered_data) > 0 and week_pred <= filtered_data['Week'].max() + 1:
-                    # Filtrujemy dane dla tygodni poprzedzających week_pred
-                    relevant_data = filtered_data.loc[(filtered_data['Week'] < week_pred) & (filtered_data['Week'] > start_week)].copy()
-                    print(relevant_data['Week'].unique)
-
-                    # Tworzymy zestaw danych do predykcji dla wybranego tygodnia
-                    next_week_data = relevant_data[relevant_data['Week'] == relevant_data['Week'].max()].copy()
-
-
-                    # Ustawiamy nowy tydzień jako 'week_pred'
-                    next_week_data['Week'] = week_pred
-
-                    # Zaktualizuj przesunięcia danych, np. T-1, T-2, itp.
-                    for i in range(1, end_week - start_week):
-                        if f'Quantity_Ordered_T-{i}' in relevant_data.columns:
-                            next_week_data[f'Quantity_Ordered_T-{i}'] = relevant_data[f'Quantity_Ordered_T-{i}'].values[-1]
-
-
-                    quantities_list_str = [str(quantity) for quantity in historical_sales[city_name][product_name]]
-                    file.write(f'{city_name}\t{product_name}\t' + '\t'.join(quantities_list_str))
-
-                    # Usuwamy kolumnę 'Quantity Ordered', jeśli istnieje
-                    next_week_data = next_week_data.drop(columns=['Quantity Ordered'], errors='ignore')
-                    predicted_quantity = pipeline_best.predict(next_week_data)[0]
-
-                    # Zapisujemy wynik do pliku
-                    file.write(f'\t{predicted_quantity:.2f}\n')
-
-                    print(
-                        f"Przewidziana ilość zamówień dla {product_name} w {city_name} na tydzień {week_pred}: {predicted_quantity:.2f}")
+                # Jeżeli są dane dla tego dnia, zapisz liczbę zamówień; jeśli nie, zapisz 0
+                if not filtered_data.empty:
+                    historical_sales[city][product].append(int(filtered_data.values[0]))
                 else:
-                    print(f"Brak wystarczających danych dla {product_name} w {city_name} na tydzień {week_pred}.")
+                    historical_sales[city][product].append(0)
+
+    prediction_data = {}
 
 
-    with open(report_file_path, 'r') as file:
-        lines = file.readlines()
+    # Iterujemy po każdym mieście
+    for city_col in city_columns:
+        city_name = city_col.replace('City_', '').replace('_', ' ')
+        prediction_data[city_name] = {}
 
-    predictions = []
-    for line in lines[2:]:  # Skip the first two lines (header)
-        parts = line.strip().split('\t')
-        city = parts[0]
-        product = parts[1]
-        historical_sales = list(map(float, parts[2:-1]))
-        predicted_quantity = float(parts[-1])
-        predictions.append({
-            'city': city,
-            'product': product,
-            'historical_sales': historical_sales,
-            'predicted_quantity': predicted_quantity,
-            'start_week': start_week
-        })
+        # Iterujemy po każdym produkcie
+        for product_col in product_columns:
+            product_name = product_col.replace('Product_', '').replace('_', ' ')
 
-    return render_template('predictions.html', predictions=predictions)
+
+            # Tworzymy maskę dla wybranego miasta i produktu
+            filter_mask = (grouped_data_encoded[city_col] == 1) & (grouped_data_encoded[product_col] == 1)
+            filtered_data = grouped_data_encoded[filter_mask]
+
+            # Sprawdzamy, czy dane istnieją dla danego miasta i produktu
+            if len(filtered_data) > 0 and week_pred <= filtered_data['Week'].max() + 1:
+                # Filtrujemy dane dla tygodni poprzedzających week_pred
+                relevant_data = filtered_data.loc[(filtered_data['Week'] < week_pred) & (filtered_data['Week'] > start_week)].copy()
+                prediction_data[city_name][product_name] = {}
+
+                # Tworzymy zestaw danych do predykcji dla wybranego tygodnia
+                next_week_data = relevant_data[relevant_data['Week'] == relevant_data['Week'].max()].copy()
+
+
+                # Ustawiamy nowy tydzień jako 'week_pred'
+                next_week_data['Week'] = week_pred
+
+                # Zaktualizuj przesunięcia danych, np. T-1, T-2, itp.
+                for i in range(1, end_week - start_week):
+                    if f'Quantity_Ordered_T-{i}' in relevant_data.columns:
+                        next_week_data[f'Quantity_Ordered_T-{i}'] = relevant_data[f'Quantity_Ordered_T-{i}'].values[-1]
+
+
+                quantities_list_str = [str(quantity) for quantity in historical_sales[city_name][product_name]]
+
+                prediction_data[city_name][product_name]['historical_sales'] = historical_sales[city_name][product_name]
+
+                # Usuwamy kolumnę 'Quantity Ordered', jeśli istnieje
+                next_week_data = next_week_data.drop(columns=['Quantity Ordered'], errors='ignore')
+                predicted_quantity = pipeline_best.predict(next_week_data)[0]
+                prediction_data[city_name][product_name]['predicted_sales'] = int(np.ceil(predicted_quantity))
+            else:
+                print(f"Brak wystarczających danych dla {product_name} w {city_name} na tydzień {week_pred}.")
+
+
+
+    # predictions = []
+    # for line in lines[2:]:  # Skip the first two lines (header)
+    #     parts = line.strip().split('\t')
+    #     city = parts[0]
+    #     product = parts[1]
+    #     historical_sales = list(map(float, parts[2:-1]))
+    #     predicted_quantity = float(parts[-1])
+    #     predictions.append({
+    #         'city': city,
+    #         'product': product,
+    #         'historical_sales': historical_sales,
+    #         'predicted_quantity': predicted_quantity,
+    #         'start_week': start_week
+    #     })
+
+    return render_template('predictions.html', predictions=prediction_data, start_week=start_week)
 
 if __name__ == '__main__':
     app.run(debug=True)
