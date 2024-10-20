@@ -1,18 +1,13 @@
-import numpy as np
-import pandas as pd
-from sklearn.preprocessing import OneHotEncoder
-import joblib
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error
 import lightgbm as lgb
 import optuna
-
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect
 import pandas as pd
+import os
 
 app = Flask(__name__)
 
@@ -57,16 +52,14 @@ def upload_file():
 
 @app.route('/train', methods=['POST'])
 def train_model3():
-
-
     start_week = int(request.form['start_week'])
     end_week = int(request.form['end_week'])
     selected_weeks = list(range(start_week, end_week + 1))
+
     grouped_data = pd.read_csv('processed_data.csv')
 
     onehot_encoder_city = OneHotEncoder(sparse_output=False)
     onehot_encoder_product = OneHotEncoder(sparse_output=False)
-
     encoded_cities = onehot_encoder_city.fit_transform(grouped_data[['City']])
     encoded_products = onehot_encoder_product.fit_transform(grouped_data[['Product']])
 
@@ -76,24 +69,23 @@ def train_model3():
 
     encoded_cities_df.columns = encoded_cities_df.columns.str.replace(' ', '_', regex=False)
     encoded_products_df.columns = encoded_products_df.columns.str.replace(' ', '_', regex=False)
-    grouped_data_encoded = pd.concat([grouped_data, encoded_cities_df, encoded_products_df], axis=1)
 
+    grouped_data_encoded = pd.concat([grouped_data, encoded_cities_df, encoded_products_df], axis=1)
     grouped_data_encoded.drop(columns=['City', 'Product'], inplace=True)
 
+    # Filter out selected weeks
     grouped_data_encoded = grouped_data_encoded[grouped_data_encoded['Week'].isin(selected_weeks)]
-
-    # grouped_data_encoded = grouped_data_encoded[grouped_data_encoded['Week'].isin(range(start_week, end_week + 1))]
 
     grouped_data_encoded['Quantity Ordered'] = grouped_data_encoded['Quantity Ordered'].astype(float)
 
     # na zakresie 1-6 uczymy się na historii z 5 tygodni wstecz ile bylo trzeba zamowic. Tutaj zmieniamy do ilu wstecz patrzymy
-    for i in range(start_week, end_week):
+    for i in range(1, end_week+1):
         grouped_data_encoded[f'Quantity_Ordered_T-{i}'] = grouped_data_encoded['Quantity Ordered'].shift(i)
 
     grouped_data_encoded = grouped_data_encoded.dropna()
+
     X = grouped_data_encoded.drop(['Quantity Ordered'], axis=1)
     y = grouped_data_encoded['Quantity Ordered']
-
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
     numeric_features = X.select_dtypes(include=['float64']).columns.tolist()
@@ -143,8 +135,6 @@ def train_model3():
 
     pipeline_best.fit(X_train, y_train)
 
-    import os
-
     # Zmienna, która określa tydzień dla predykcji
     week_pred = end_week + 1
 
@@ -153,7 +143,7 @@ def train_model3():
     product_columns = [col for col in grouped_data_encoded.columns if col.startswith('Product_')]
 
     # Ścieżka do pliku, w którym zapisujemy wyniki
-    report_file_path = 'predicted_sales_report.txt'
+
     # filtered_historical_data = ''
     # for city in grouped_data['City'].unique():
     #     for product in grouped_data['Product'].unique():
@@ -162,15 +152,16 @@ def train_model3():
     #                         grouped_data['Week'] == day)
     #             filtered_historical_data = grouped_data.loc[mask, 'Quantity Ordered']
 
-    start_date = start_week
-    end_date = end_week
     report_file_path = 'historical_sales_report.txt'
+    historical_sales = {}
     with open(report_file_path, 'w') as file:
         for city in grouped_data['City'].unique():
+            historical_sales[city] = {}
             for product in grouped_data['Product'].unique():
                 file.write(f'{city};{product}')
+                historical_sales[city][product] = []
 
-                for day in range(start_date, end_date + 1):
+                for day in range(start_week, end_week + 1):
                     mask = (grouped_data['City'] == city) & (grouped_data['Product'] == product) & (
                                 grouped_data['Week'] == day)
                     filtered_data = grouped_data.loc[mask, 'Quantity Ordered']
@@ -178,12 +169,15 @@ def train_model3():
                     # Jeżeli są dane dla tego dnia, zapisz liczbę zamówień; jeśli nie, zapisz 0
                     if not filtered_data.empty:
                         file.write(f'{int(filtered_data.values[0])};')
+                        historical_sales[city][product].append(int(filtered_data.values[0]))
                     else:
                         file.write('0;')  # Brak danych - 0
+                        historical_sales[city][product].append(0)
 
                 # Nowa linia po każdym produkcie
                 file.write('\n')
-
+    print(historical_sales)
+    report_file_path = 'predicted_sales_report.txt'
     # Tworzymy nowy plik i zapisujemy nagłówki
     with open(report_file_path, 'w') as file:
         file.write(f'Przewidywania na tydzień: {week_pred}\n')
@@ -204,30 +198,27 @@ def train_model3():
                 # Sprawdzamy, czy dane istnieją dla danego miasta i produktu
                 if len(filtered_data) > 0 and week_pred <= filtered_data['Week'].max() + 1:
                     # Filtrujemy dane dla tygodni poprzedzających week_pred
-                    relevant_data = filtered_data[filtered_data['Week'] < week_pred].copy()
+                    relevant_data = filtered_data.loc[(filtered_data['Week'] < week_pred) & (filtered_data['Week'] > start_week)].copy()
+                    print(relevant_data['Week'].unique)
 
                     # Tworzymy zestaw danych do predykcji dla wybranego tygodnia
                     new_data = relevant_data[relevant_data['Week'] == relevant_data['Week'].max()].copy()
+
 
                     # Ustawiamy nowy tydzień jako 'week_pred'
                     new_data['Week'] = week_pred
 
                     # Zaktualizuj przesunięcia danych, np. T-1, T-2, itp.
-                    for i in range(1, end_week):  # Zakładamy 5 przesuniętych tygodni
+                    for i in range(1, end_week-start_week):  # Zakładamy 5 przesuniętych tygodni
                         if f'Quantity_Ordered_T-{i}' in relevant_data.columns:
                             new_data[f'Quantity_Ordered_T-{i}'] = relevant_data[f'Quantity_Ordered_T-{i}'].values[-1]
 
                     # Przewidujemy dla danego tygodnia
 
-                    historical_quantities = relevant_data[['Week', 'Quantity Ordered']].sort_values(by='Week')
+                    quantities_list = historical_sales[city_name][product_name]
+                    quantities_list_str = [str(quantity) for quantity in quantities_list]
 
-                    if not historical_quantities.empty:
-                        quantities_list = historical_quantities['Quantity Ordered'].tolist()
-
-                        full_quantities_list = [str(quantities_list[i]) if i < len(quantities_list) else '0' for i in
-                                                range(week_pred - 1)]
-
-                        file.write(f'{city_name}\t{product_name}\t' + '\t'.join(full_quantities_list))
+                    file.write(f'{city_name}\t{product_name}\t' + '\t'.join(quantities_list_str))
 
                     new_data = new_data.drop(columns=['Quantity Ordered'],
                                              errors='ignore')  # Usuwamy rzeczywiste wartości sprzedaży, jeśli są
@@ -256,7 +247,8 @@ def train_model3():
             'city': city,
             'product': product,
             'historical_sales': historical_sales,
-            'predicted_quantity': predicted_quantity
+            'predicted_quantity': predicted_quantity,
+            'start_week': start_week
         })
 
     return render_template('predictions.html', predictions=predictions)

@@ -84,7 +84,7 @@
             <td>{{ prediction.product }}</td>
             <td>{{ prediction.predicted_quantity }}</td>
             <td>
-                <button class="btn btn-primary" onclick="showChart('{{ prediction.city }}', '{{ prediction.product }}', {{ prediction.historical_sales | tojson }})">Show Chart</button>
+                <button class="btn btn-primary" onclick="showChart('{{ prediction.city }}', '{{ prediction.product }}', {{ prediction.historical_sales | tojson }}, {{ prediction.start_week}})">Show Chart</button>
             </td>
         </tr>
         {% endfor %}
@@ -103,7 +103,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <canvas id="salesChart" width="1800" height="1000"></canvas>
+                <canvas id="salesChart" width="800" height="800"></canvas>
             </div>
         </div>
     </div>
@@ -112,7 +112,7 @@
 <script>
 let chartInstance = null;
 
-function showChart(city, product, historicalSales) {
+function showChart(city, product, historicalSales, startWeek) {
     const ctx = document.getElementById('salesChart').getContext('2d');
 
     // Destroy the previous chart instance if it exists
@@ -123,7 +123,7 @@ function showChart(city, product, historicalSales) {
     chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: Array.from({length: historicalSales.length}, (_, i) => i + 1),
+            labels: Array.from({length: historicalSales.length}, (_, i) => startWeek + i),
             datasets: [{
                 label: `${product} Sales in ${city}`,
                 data: historicalSales,
@@ -141,12 +141,16 @@ function showChart(city, product, historicalSales) {
                     }
                 },
                 y: {
+                    beginAtZero: true,
                     title: {
                         display: true,
                         text: 'Sales'
                     }
                 }
-            }
+            },
+            responsive: true,
+            maintainAspectRatio: false,
+
         }
     });
 
