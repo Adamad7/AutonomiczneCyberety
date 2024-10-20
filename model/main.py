@@ -142,23 +142,13 @@ def train_model3():
     city_columns = [col for col in grouped_data_encoded.columns if col.startswith('City_')]
     product_columns = [col for col in grouped_data_encoded.columns if col.startswith('Product_')]
 
-    # Ścieżka do pliku, w którym zapisujemy wyniki
-
-    # filtered_historical_data = ''
-    # for city in grouped_data['City'].unique():
-    #     for product in grouped_data['Product'].unique():
-    #         for day in range(start_week, end_week + 1):
-    #             mask = (grouped_data['City'] == city) & (grouped_data['Product'] == product) & (
-    #                         grouped_data['Week'] == day)
-    #             filtered_historical_data = grouped_data.loc[mask, 'Quantity Ordered']
-
     report_file_path = 'historical_sales_report.txt'
     historical_sales = {}
     with open(report_file_path, 'w') as file:
         for city in grouped_data['City'].unique():
             historical_sales[city] = {}
             for product in grouped_data['Product'].unique():
-                file.write(f'{city};{product}')
+                file.write(f'{city};{product};')
                 historical_sales[city][product] = []
 
                 for day in range(start_week, end_week + 1):
@@ -176,6 +166,7 @@ def train_model3():
 
                 # Nowa linia po każdym produkcie
                 file.write('\n')
+
     print(historical_sales)
     report_file_path = 'predicted_sales_report.txt'
     # Tworzymy nowy plik i zapisujemy nagłówki
@@ -202,27 +193,24 @@ def train_model3():
                     print(relevant_data['Week'].unique)
 
                     # Tworzymy zestaw danych do predykcji dla wybranego tygodnia
-                    new_data = relevant_data[relevant_data['Week'] == relevant_data['Week'].max()].copy()
+                    next_week_data = relevant_data[relevant_data['Week'] == relevant_data['Week'].max()].copy()
 
 
                     # Ustawiamy nowy tydzień jako 'week_pred'
-                    new_data['Week'] = week_pred
+                    next_week_data['Week'] = week_pred
 
                     # Zaktualizuj przesunięcia danych, np. T-1, T-2, itp.
-                    for i in range(1, end_week-start_week):  # Zakładamy 5 przesuniętych tygodni
+                    for i in range(1, end_week - start_week):
                         if f'Quantity_Ordered_T-{i}' in relevant_data.columns:
-                            new_data[f'Quantity_Ordered_T-{i}'] = relevant_data[f'Quantity_Ordered_T-{i}'].values[-1]
+                            next_week_data[f'Quantity_Ordered_T-{i}'] = relevant_data[f'Quantity_Ordered_T-{i}'].values[-1]
 
-                    # Przewidujemy dla danego tygodnia
 
-                    quantities_list = historical_sales[city_name][product_name]
-                    quantities_list_str = [str(quantity) for quantity in quantities_list]
-
+                    quantities_list_str = [str(quantity) for quantity in historical_sales[city_name][product_name]]
                     file.write(f'{city_name}\t{product_name}\t' + '\t'.join(quantities_list_str))
 
-                    new_data = new_data.drop(columns=['Quantity Ordered'],
-                                             errors='ignore')  # Usuwamy rzeczywiste wartości sprzedaży, jeśli są
-                    predicted_quantity = pipeline_best.predict(new_data)[0]
+                    # Usuwamy kolumnę 'Quantity Ordered', jeśli istnieje
+                    next_week_data = next_week_data.drop(columns=['Quantity Ordered'], errors='ignore')
+                    predicted_quantity = pipeline_best.predict(next_week_data)[0]
 
                     # Zapisujemy wynik do pliku
                     file.write(f'\t{predicted_quantity:.2f}\n')
@@ -232,7 +220,7 @@ def train_model3():
                 else:
                     print(f"Brak wystarczających danych dla {product_name} w {city_name} na tydzień {week_pred}.")
 
-    print(f"\nRaport został zapisany do pliku: {os.path.abspath(report_file_path)}")
+
     with open(report_file_path, 'r') as file:
         lines = file.readlines()
 
